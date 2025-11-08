@@ -14,8 +14,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -75,7 +79,25 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     public Map<String, Long> getWordStatistics(String id) {
-        return null;
+        Note note =  noteRepository.findById(id).orElseThrow(() -> new NoteNotFoundException("Note not found with id: " + id));
+        String text = note.getText().toLowerCase();
+        String cleanedText = text.replaceAll("[^a-zа-яієїґ\\s]", "");
+        String[] words = cleanedText.split("\\s+");
+        return Arrays.stream(words)
+                .filter(word -> !word.isEmpty())
+                .collect(Collectors.groupingBy(
+                        Function.identity(),
+                        Collectors.counting()
+                ))
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .collect(Collectors.toMap(
+                        Map.Entry ::getKey,
+                        Map.Entry ::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new
+                ));
     }
     private NoteDetailResponse mapToDetailResponse(Note note) {
         return new NoteDetailResponse (
