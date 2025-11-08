@@ -4,6 +4,7 @@ import com.example.note_application.dto.NoteCreateRequest;
 import com.example.note_application.dto.NoteDetailResponse;
 import com.example.note_application.dto.NoteListResponse;
 import com.example.note_application.dto.NoteUpdateRequest;
+import com.example.note_application.exception.NoteNotFoundException;
 import com.example.note_application.model.Note;
 import com.example.note_application.model.Tag;
 import com.example.note_application.repository.NoteRepository;
@@ -30,31 +31,66 @@ public class NoteServiceImpl implements NoteService {
                 .createdDate(LocalDateTime.now())
                 .build();
         Note savedNote = noteRepository.save(note);
-        return null;
+        return mapToDetailResponse(savedNote);
     }
 
     @Override
     public NoteDetailResponse updateNote(String id, NoteUpdateRequest request) {
-        return null;
+        Note note = noteRepository.findById(id)
+                .orElseThrow(() -> new NoteNotFoundException("Note not found with id: " + id));
+        note.setTitle(request.title());
+        note.setText(request.text());
+        note.setTags(request.tags() != null ? request.tags() : new HashSet<>());
+
+        Note updatedNote = noteRepository.save(note);
+        return mapToDetailResponse(updatedNote);
     }
 
     @Override
     public void deleteNote(String id) {
+        if (!noteRepository.existsById(id)) {
+            throw new NoteNotFoundException("Note not found with id: " + id);
+        }
+        noteRepository.deleteById(id);
 
     }
 
     @Override
     public Page<NoteListResponse> listNotes(Pageable pageable, Tag tag) {
-        return null;
+        Page<Note> notes;
+        if(tag != null) {
+            notes = noteRepository.findByTagsContainingOrderByCreatedDateDesc(tag, pageable);
+        } else {
+            notes = noteRepository.findAllByOrderByCreatedDateDesc(pageable);
+        }
+        return notes.map(this::mapToListResponse);
     }
 
     @Override
     public NoteDetailResponse getNoteById(String id) {
-        return null;
+        Note note = noteRepository.findById(id)
+                .orElseThrow(() -> new NoteNotFoundException("Note not found with id: " + id));
+        return mapToDetailResponse(note);
     }
 
     @Override
     public Map<String, Long> getWordStatistics(String id) {
         return null;
+    }
+    private NoteDetailResponse mapToDetailResponse(Note note) {
+        return new NoteDetailResponse (
+                note.getId(),
+                note.getTitle(),
+                note.getCreatedDate(),
+                note.getText(),
+                note.getTags()
+        );
+    }
+    private NoteListResponse mapToListResponse(Note note) {
+        return new NoteListResponse (
+                note.getId(),
+                note.getTitle(),
+                note.getCreatedDate()
+        );
     }
 }
