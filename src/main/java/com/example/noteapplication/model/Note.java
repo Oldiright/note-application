@@ -1,6 +1,5 @@
-package com.example.note_application.model;
+package com.example.noteapplication.model;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,12 +18,8 @@ import java.util.Set;
 public class Note {
     @Id
     private String id;
-
     private String title;
-
     private String text;
-
     private LocalDateTime createdDate;
-
     private Set<Tag> tags;
 }

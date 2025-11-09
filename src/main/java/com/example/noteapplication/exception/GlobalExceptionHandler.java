@@ -1,4 +1,4 @@
-package com.example.note_application.exception;
+package com.example.noteapplication.exception;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.springframework.http.HttpStatus;
@@ -24,6 +24,7 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(
             MethodArgumentNotValidException ex) {
@@ -39,13 +40,12 @@ public class GlobalExceptionHandler {
         response.put("timestamp", LocalDateTime.now());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
             HttpMessageNotReadableException ex) {
-
         String message = "Invalid request body";
-
-        // Якщо це помилка невалідного enum
+        // if it invalid enum
         if (ex.getCause() instanceof InvalidFormatException ife) {
             if (ife.getTargetType().isEnum()) {
                 String fieldName = ife.getPath().getFirst().getFieldName();
@@ -60,7 +60,6 @@ public class GlobalExceptionHandler {
                 );
             }
         }
-
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 message,
@@ -78,6 +77,8 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    private record ErrorResponse(int status, String message, LocalDateTime timestamp) {}
+
+    private record ErrorResponse(int status, String message, LocalDateTime timestamp) {
+    }
     //todo: looks good, but will think about it late
 }

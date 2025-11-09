@@ -1,4 +1,4 @@
-package com.example.note_application.config;
+package com.example.noteapplication.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;

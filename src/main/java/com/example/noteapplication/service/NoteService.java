@@ -1,10 +1,10 @@
-package com.example.note_application.service;
+package com.example.noteapplication.service;
 
-import com.example.note_application.dto.NoteCreateRequest;
-import com.example.note_application.dto.NoteDetailResponse;
-import com.example.note_application.dto.NoteListResponse;
-import com.example.note_application.dto.NoteUpdateRequest;
-import com.example.note_application.model.Tag;
+import com.example.noteapplication.dto.NoteCreateRequest;
+import com.example.noteapplication.dto.NoteDetailResponse;
+import com.example.noteapplication.dto.NoteListResponse;
+import com.example.noteapplication.dto.NoteUpdateRequest;
+import com.example.noteapplication.model.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

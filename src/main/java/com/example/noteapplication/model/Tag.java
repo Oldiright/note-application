@@ -1,4 +1,4 @@
-package com.example.note_application.model;
+package com.example.noteapplication.model;
 
 
 public enum Tag {

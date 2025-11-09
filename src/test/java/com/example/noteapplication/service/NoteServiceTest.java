@@ -1,24 +1,31 @@
-package com.example.note_application.service;
+package com.example.noteapplication.service;
 
-import com.example.note_application.dto.NoteCreateRequest;
-import com.example.note_application.dto.NoteDetailResponse;
-import com.example.note_application.dto.NoteUpdateRequest;
-import com.example.note_application.exception.NoteNotFoundException;
-import com.example.note_application.model.Note;
-import com.example.note_application.model.Tag;
-import com.example.note_application.repository.NoteRepository;
+import com.example.noteapplication.dto.NoteCreateRequest;
+import com.example.noteapplication.dto.NoteDetailResponse;
+import com.example.noteapplication.dto.NoteUpdateRequest;
+import com.example.noteapplication.exception.NoteNotFoundException;
+import com.example.noteapplication.model.Note;
+import com.example.noteapplication.model.Tag;
+import com.example.noteapplication.repository.NoteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -28,10 +35,8 @@ public class NoteServiceTest {
 
     @Mock
     private NoteRepository noteRepository;
-
     @InjectMocks
     private NoteServiceImpl noteService;
-
     private Note testNote;
     private NoteCreateRequest createRequest;
 
@@ -79,7 +84,6 @@ public class NoteServiceTest {
                         "Also need to pick up groceries on the way home.",
                 null
         );
-
         Note noteWithoutTags = Note.builder()
                 .id("507f1f77bcf86cd799439012")
                 .title("Personal Reminder")
@@ -88,7 +92,6 @@ public class NoteServiceTest {
                 .tags(Set.of())
                 .createdDate(LocalDateTime.now())
                 .build();
-
         when(noteRepository.save(any(Note.class))).thenReturn(noteWithoutTags);
 
         NoteDetailResponse response = noteService.createNote(requestWithoutTags);
@@ -108,7 +111,6 @@ public class NoteServiceTest {
                         "analysis section and updated market positioning strategy. Ready for executive review.",
                 Set.of(Tag.BUSINESS, Tag.IMPORTANT)
         );
-
         Note updatedNote = Note.builder()
                 .id("507f1f77bcf86cd799439011")
                 .title("Updated Q4 Business Review - Final Version")
@@ -118,7 +120,6 @@ public class NoteServiceTest {
                 .tags(Set.of(Tag.BUSINESS, Tag.IMPORTANT))
                 .createdDate(testNote.getCreatedDate())
                 .build();
-
         when(noteRepository.findById("507f1f77bcf86cd799439011")).thenReturn(Optional.of(testNote));
         when(noteRepository.save(any(Note.class))).thenReturn(updatedNote);
 
@@ -140,14 +141,12 @@ public class NoteServiceTest {
                 "This note doesn't exist in the database and should trigger an exception.",
                 Set.of(Tag.PERSONAL)
         );
-
         when(noteRepository.findById("nonexistent123")).thenReturn(Optional.empty());
 
         NoteNotFoundException exception = assertThrows(
                 NoteNotFoundException.class,
                 () -> noteService.updateNote("nonexistent123", updateRequest)
         );
-
         assertTrue(exception.getMessage().contains("Note not found with id: nonexistent123"));
     }
 
@@ -168,7 +167,6 @@ public class NoteServiceTest {
                 NoteNotFoundException.class,
                 () -> noteService.deleteNote("nonexistent456")
         );
-
         assertTrue(exception.getMessage().contains("Note not found with id: nonexistent456"));
     }
 
@@ -194,52 +192,6 @@ public class NoteServiceTest {
     }
 
     @Test
-    void getWordStatisticsWithSimpleText() {
-        Note simpleNote = Note.builder()
-                .id("507f1f77bcf86cd799439013")
-                .title("Word Statistics Test")
-                .text("note is just a note")
-                .createdDate(LocalDateTime.now())
-                .build();
-
-        when(noteRepository.findById("507f1f77bcf86cd799439013")).thenReturn(Optional.of(simpleNote));
-
-        Map<String, Long> stats = noteService.getWordStatistics("507f1f77bcf86cd799439013");
-
-        assertNotNull(stats);
-        assertEquals(2L, stats.get("note"));
-        assertEquals(1L, stats.get("is"));
-        assertEquals(1L, stats.get("just"));
-        assertEquals(1L, stats.get("a"));
-        assertEquals(4, stats.size());
-    }
-
-    @Test
-    void getWordStatisticWithComplexText() {
-        Note complexNote = Note.builder()
-                .id("507f1f77bcf86cd799439014")
-                .title("Complex Statistics Test")
-                .text("The meeting was productive. The team discussed the project timeline. " +
-                        "The project requires more resources. The deadline is approaching fast.")
-                .createdDate(LocalDateTime.now())
-                .build();
-
-        when(noteRepository.findById("507f1f77bcf86cd799439014")).thenReturn(Optional.of(complexNote));
-
-        Map<String, Long> stats = noteService.getWordStatistics("507f1f77bcf86cd799439014");
-
-        assertNotNull(stats);
-        assertEquals(5L, stats.get("the"));  // the most frequent word
-        assertEquals(2L, stats.get("project"));
-        assertEquals(1L, stats.get("meeting"));
-        assertEquals(1L, stats.get("productive"));
-
-        // check that the sorting works (the first word has the highest count)
-        String firstWord = stats.keySet().iterator().next();
-        assertEquals(5L, stats.get(firstWord));
-    }
-
-    @Test
     void NotFoundDuringGetWordStatistics() {
         when(noteRepository.findById("nonexistent999")).thenReturn(Optional.empty());
 
@@ -247,21 +199,136 @@ public class NoteServiceTest {
                 noteService.getWordStatistics("nonexistent999"));
     }
 
-    @Test
-    void getWordStatisticsCheckCaseInsensitive() {
-        Note caseNote = Note.builder()
-                .id("507f1f77bcf86cd799439015")
-                .title("Case Test")
-                .text("Java JAVA java Javascript javascript")
+    @ParameterizedTest(name = "[{index}] text=''{0}'' should return correct statistics")
+    @MethodSource("provideWordStatisticsTestCases")
+    void getWordStatistics_variousCases(String testId, String text, Map<String, Long> expectedStats) {
+        // Arrange
+        Note note = Note.builder()
+                .id(testId)
+                .title("Test Note")
+                .text(text)
                 .createdDate(LocalDateTime.now())
                 .build();
 
-        when(noteRepository.findById("507f1f77bcf86cd799439015")).thenReturn(Optional.of(caseNote));
+        when(noteRepository.findById(testId)).thenReturn(Optional.of(note));
 
-        Map<String, Long> stats = noteService.getWordStatistics("507f1f77bcf86cd799439015");
+        // Act
+        Map<String, Long> result = noteService.getWordStatistics(testId);
 
-        assertNotNull(stats);
-        assertEquals(3L, stats.get("java"));  // All “Java” options must be combined
-        assertEquals(2L, stats.get("javascript"));
+        // Assert
+        assertThat(result).containsExactlyInAnyOrderEntriesOf(expectedStats);
+        verify(noteRepository, times(1)).findById(testId);
     }
+
+    private static Stream<Arguments> provideWordStatisticsTestCases() {
+        return Stream.of(
+                // Simple text - repeated word
+                Arguments.of(
+                        "test-simple",
+                        "note is just a note",
+                        Map.of("note", 2L, "is", 1L, "just", 1L, "a", 1L)
+                ),
+
+                // Complex text - multiple repeated words
+                Arguments.of(
+                        "test-complex",
+                        "The meeting was productive. The team discussed the project timeline. " +
+                                "The project requires more resources. The deadline is approaching fast.",
+                        createOrderedMap(
+                                "the", 5L,
+                                "project", 2L,
+                                "meeting", 1L,
+                                "was", 1L,
+                                "productive", 1L,
+                                "team", 1L,
+                                "discussed", 1L,
+                                "timeline", 1L,
+                                "requires", 1L,
+                                "more", 1L,
+                                "resources", 1L,
+                                "deadline", 1L,
+                                "is", 1L,
+                                "approaching", 1L,
+                                "fast", 1L
+                        )
+                ),
+
+                // Case insensitive - Latin
+                Arguments.of(
+                        "test-case-latin",
+                        "Java JAVA java Javascript javascript",
+                        Map.of("java", 3L, "javascript", 2L)
+                ),
+
+                // Case insensitive - Cyrillic
+                Arguments.of(
+                        "test-case-cyrillic",
+                        "Київ КИЇВ київ Україна УКРАЇНА україна",
+                        Map.of("київ", 3L, "україна", 3L)
+                ),
+
+                // Mixed Cyrillic and Latin
+                Arguments.of(
+                        "test-mixed",
+                        "Spring Boot додаток на Java для бізнесу",
+                        Map.of(
+                                "spring", 1L,
+                                "boot", 1L,
+                                "додаток", 1L,
+                                "на", 1L,
+                                "java", 1L,
+                                "для", 1L,
+                                "бізнесу", 1L
+                        )
+                ),
+
+                // Real Ukrainian sentence
+                Arguments.of(
+                        "test-ukrainian-sentence",
+                        "Щоденна нарада команди щодо проєкту. Команда обговорила прогрес проєкту.",
+                        Map.of(
+                                "щоденна", 1L,
+                                "нарада", 1L,
+                                "команди", 1L,
+                                "щодо", 1L,
+                                "проєкту", 2L,
+                                "команда", 1L,
+                                "обговорила", 1L,
+                                "прогрес", 1L
+                        )
+                ),
+
+                // Ukrainian with punctuation
+                Arguments.of(
+                        "test-ukrainian-punctuation",
+                        "Привіт, світ! Це тестовий текст. Світ прекрасний!",
+                        Map.of(
+                                "привіт", 1L,
+                                "світ", 2L,
+                                "це", 1L,
+                                "тестовий", 1L,
+                                "текст", 1L,
+                                "прекрасний", 1L
+                        )
+                ),
+
+                // Edge cases
+                Arguments.of("test-empty", "", Collections.emptyMap()),
+                Arguments.of("test-spaces", "   ", Collections.emptyMap()),
+                Arguments.of("test-single-latin", "hello", Map.of("hello", 1L)),
+                Arguments.of("test-single-cyrillic", "привіт", Map.of("привіт", 1L)),
+
+                // Special characters only
+                Arguments.of("test-special-chars", "!!! ??? ...", Collections.emptyMap())
+        );
+    }
+
+    private static Map<String, Long> createOrderedMap(Object... keyValuePairs) {
+        Map<String, Long> map = new LinkedHashMap<>();
+        for (int i = 0; i < keyValuePairs.length; i += 2) {
+            map.put((String) keyValuePairs[i], (Long) keyValuePairs[i + 1]);
+        }
+        return map;
+    }
+
 }

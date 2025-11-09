@@ -23,9 +23,11 @@ services:
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/notesdb
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - notes-network
+    restart: on-failure
 
 volumes:
   mongodb_data:

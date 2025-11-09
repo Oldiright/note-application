@@ -1,7 +1,7 @@
-package com.example.note_application.dto;
+package com.example.noteapplication.dto;
 
 
-import com.example.note_application.model.Tag;
+import com.example.noteapplication.model.Tag;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -12,4 +12,5 @@ public record NoteDetailResponse(
         LocalDateTime createdDate,
         String text,
         Set<Tag> tags
-) {}
+) {
+}

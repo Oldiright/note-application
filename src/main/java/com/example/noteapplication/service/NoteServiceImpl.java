@@ -1,13 +1,14 @@
-package com.example.note_application.service;
+package com.example.noteapplication.service;
 
-import com.example.note_application.dto.NoteCreateRequest;
-import com.example.note_application.dto.NoteDetailResponse;
-import com.example.note_application.dto.NoteListResponse;
-import com.example.note_application.dto.NoteUpdateRequest;
-import com.example.note_application.exception.NoteNotFoundException;
-import com.example.note_application.model.Note;
-import com.example.note_application.model.Tag;
-import com.example.note_application.repository.NoteRepository;
+import com.example.noteapplication.dto.NoteCreateRequest;
+import com.example.noteapplication.dto.NoteDetailResponse;
+import com.example.noteapplication.dto.NoteListResponse;
+import com.example.noteapplication.dto.NoteUpdateRequest;
+import com.example.noteapplication.exception.NoteNotFoundException;
+import com.example.noteapplication.mapper.NoteMapper;
+import com.example.noteapplication.model.Note;
+import com.example.noteapplication.model.Tag;
+import com.example.noteapplication.repository.NoteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,12 +20,16 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class NoteServiceImpl implements NoteService {
     private final NoteRepository noteRepository;
+    private final NoteMapper mapper;
+    private static final Pattern NON_WORD_PATTERN = Pattern.compile("[^a-zа-яієїґ\\s]");
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 
     @Override
     public NoteDetailResponse createNote(NoteCreateRequest request) {
@@ -35,7 +40,7 @@ public class NoteServiceImpl implements NoteService {
                 .createdDate(LocalDateTime.now())
                 .build();
         Note savedNote = noteRepository.save(note);
-        return mapToDetailResponse(savedNote);
+        return mapper.mapToDetailResponse(savedNote);
     }
 
     @Override
@@ -44,10 +49,10 @@ public class NoteServiceImpl implements NoteService {
                 .orElseThrow(() -> new NoteNotFoundException("Note not found with id: " + id));
         note.setTitle(request.title());
         note.setText(request.text());
-        note.setTags(request.tags() != null ? request.tags() : new HashSet<>());
+        note.setTags(request.tags() != null ? request.tags() : note.getTags());
 
         Note updatedNote = noteRepository.save(note);
-        return mapToDetailResponse(updatedNote);
+        return mapper.mapToDetailResponse(updatedNote);
     }
 
     @Override
@@ -61,28 +66,26 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     public Page<NoteListResponse> listNotes(Pageable pageable, Tag tag) {
-        Page<Note> notes;
-        if(tag != null) {
-            notes = noteRepository.findByTagsContainingOrderByCreatedDateDesc(tag, pageable);
-        } else {
-            notes = noteRepository.findAllByOrderByCreatedDateDesc(pageable);
-        }
-        return notes.map(this::mapToListResponse);
+        Page<Note> notes = tag != null
+                ? noteRepository.findByTagsContainingOrderByCreatedDateDesc(tag, pageable)
+                : noteRepository.findAllByOrderByCreatedDateDesc(pageable);
+        return notes.map(mapper::mapToListResponse);
     }
 
     @Override
     public NoteDetailResponse getNoteById(String id) {
         Note note = noteRepository.findById(id)
                 .orElseThrow(() -> new NoteNotFoundException("Note not found with id: " + id));
-        return mapToDetailResponse(note);
+        return mapper.mapToDetailResponse(note);
     }
 
     @Override
     public Map<String, Long> getWordStatistics(String id) {
-        Note note =  noteRepository.findById(id).orElseThrow(() -> new NoteNotFoundException("Note not found with id: " + id));
+        Note note = noteRepository.findById(id).orElseThrow(() -> new NoteNotFoundException("Note not found with id: " + id));
         String text = note.getText().toLowerCase();
-        String cleanedText = text.replaceAll("[^a-zа-яієїґ\\s]", "");
-        String[] words = cleanedText.split("\\s+");
+        String cleanedText = NON_WORD_PATTERN.matcher(text).replaceAll("");
+        if (cleanedText.isEmpty()) {return new LinkedHashMap<>();}
+        String[] words = WHITESPACE_PATTERN.split(cleanedText);
         return Arrays.stream(words)
                 .filter(word -> !word.isEmpty())
                 .collect(Collectors.groupingBy(
@@ -93,26 +96,10 @@ public class NoteServiceImpl implements NoteService {
                 .stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
                 .collect(Collectors.toMap(
-                        Map.Entry ::getKey,
-                        Map.Entry ::getValue,
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
                         (e1, e2) -> e1,
                         LinkedHashMap::new
                 ));
-    }
-    private NoteDetailResponse mapToDetailResponse(Note note) {
-        return new NoteDetailResponse (
-                note.getId(),
-                note.getTitle(),
-                note.getCreatedDate(),
-                note.getText(),
-                note.getTags()
-        );
-    }
-    private NoteListResponse mapToListResponse(Note note) {
-        return new NoteListResponse (
-                note.getId(),
-                note.getTitle(),
-                note.getCreatedDate()
-        );
     }
 }

@@ -1,7 +1,6 @@
-package com.example.note_application.exception;
+package com.example.noteapplication.exception;
 
 public class NoteNotFoundException extends RuntimeException {
-
     public NoteNotFoundException(String message) {
         super(message);
     }

@@ -1,11 +1,11 @@
-package com.example.note_application.controller;
+package com.example.noteapplication.controller;
 
-import com.example.note_application.dto.NoteCreateRequest;
-import com.example.note_application.dto.NoteDetailResponse;
-import com.example.note_application.dto.NoteListResponse;
-import com.example.note_application.dto.NoteUpdateRequest;
-import com.example.note_application.model.Tag;
-import com.example.note_application.service.NoteService;
+import com.example.noteapplication.dto.NoteCreateRequest;
+import com.example.noteapplication.dto.NoteDetailResponse;
+import com.example.noteapplication.dto.NoteListResponse;
+import com.example.noteapplication.dto.NoteUpdateRequest;
+import com.example.noteapplication.model.Tag;
+import com.example.noteapplication.service.NoteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -37,6 +37,7 @@ public class NoteController {
         NoteDetailResponse response = noteService.createNote(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
+
     @PutMapping("/{id}")
     public ResponseEntity<NoteDetailResponse> updateNote(
             @PathVariable String id,
@@ -72,5 +73,4 @@ public class NoteController {
         Map<String, Long> stats = noteService.getWordStatistics(id);
         return ResponseEntity.ok(stats);
     }
-
 }
