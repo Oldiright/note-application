@@ -7,6 +7,7 @@ import com.example.note_application.dto.NoteUpdateRequest;
 import com.example.note_application.model.Tag;
 import com.example.note_application.service.NoteService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,13 +27,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/notes")
+@RequiredArgsConstructor
 public class NoteController {
 
     private final NoteService noteService;
 
-    public NoteController(NoteService noteService) {
-        this.noteService = noteService;
-    }
     @PostMapping
     public ResponseEntity<NoteDetailResponse> createNote(@Valid @RequestBody NoteCreateRequest request) {
         NoteDetailResponse response = noteService.createNote(request);
