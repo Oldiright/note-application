@@ -2,6 +2,7 @@ package com.example.note_application.controller;
 
 import com.example.note_application.dto.NoteCreateRequest;
 import com.example.note_application.dto.NoteDetailResponse;
+import com.example.note_application.dto.NoteUpdateRequest;
 import com.example.note_application.model.Tag;
 import com.example.note_application.service.NoteService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +14,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -87,5 +90,87 @@ class NoteControllerTest {
                 .andExpect(jsonPath("$.errors.text").exists());
     }
 
+    @Test
+    void successfulNoteUpdate() throws Exception {
+        NoteUpdateRequest request = new NoteUpdateRequest(
+                "Updated Note",
+                "Updated text",
+                Set.of(Tag.BUSINESS)
+        );
+        NoteDetailResponse response = new NoteDetailResponse(
+                "1",
+                "Updated Note",
+                LocalDateTime.now(),
+                "Updated text",
+                Set.of(Tag.BUSINESS)
+        );
 
+        when(noteService.updateNote(eq("1"), any(NoteUpdateRequest.class))).thenReturn(response);
+
+        mockMvc.perform(put("/api/v1/notes/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Updated Note"))
+                .andExpect(jsonPath("$.text").value("Updated text"));
+    }
+
+    @Test
+    void successfulNoteDelete() throws Exception {
+        mockMvc.perform(delete("/api/v1/notes/1"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void successfulGetNoteById() throws Exception {
+        NoteDetailResponse response = new NoteDetailResponse (
+                "1",
+                "Test Note",
+                LocalDateTime.now(),
+                "Test text",
+                Set.of(Tag.PERSONAL)
+        );
+        when(noteService.getNoteById("1")).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/notes/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("1"))
+                .andExpect(jsonPath("$.title").value("Test Note"))
+                .andExpect(jsonPath("$.text").value("Test text"));
+    }
+
+    @Test
+    void successfulGetWordStatistics() throws Exception {
+        Map<String, Long> stats = new LinkedHashMap<>();
+        stats.put("note", 2L);
+        stats.put("is", 1L);
+        stats.put("just", 1L);
+        stats.put("a", 1L);
+
+        when(noteService.getWordStatistics("1")).thenReturn(stats);
+
+        mockMvc.perform(get("/api/v1/notes/1/stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.note").value(2))
+                .andExpect(jsonPath("$.is").value(1))
+                .andExpect(jsonPath("$.just").value(1))
+                .andExpect(jsonPath("$.a").value(1));
+    }
+
+    @Test
+    void listNotesWithPagination() throws Exception {
+        mockMvc.perform(get("/api/v1/notes")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void listNotesWithTagFilter() throws Exception {
+        mockMvc.perform(get("/api/v1/notes")
+                        .param("tag", "PERSONAL")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk());
+    }
 }
