@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: notes-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: notesdb
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - notes-network
+
+  notes-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: notes-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/notesdb
+    depends_on:
+      - mongodb
+    networks:
+      - notes-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  notes-network:
+    driver: bridge
