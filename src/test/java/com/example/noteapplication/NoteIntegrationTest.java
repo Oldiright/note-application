@@ -101,5 +101,41 @@ class NoteIntegrationTest {
     }
 
 
+    @Test
+    @Order(2)
+    @DisplayName("Should create note without tags")
+    void shouldCreateNoteWithoutTags() throws Exception {
+        NoteCreateRequest request = new NoteCreateRequest(
+                "Grocery Shopping List",
+                "Buy milk, eggs, bread, cheese, and fresh vegetables from the local market.",
+                null
+        );
+
+        mockMvc.perform(post("/api/v1/notes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Grocery Shopping List"))
+                .andExpect(jsonPath("$.tags").isEmpty());
+
+        Assertions.assertEquals(1, noteRepository.count());
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("Should fail to create note without title")
+    void shouldFailToCreateNoteWithoutTitle() throws Exception {
+        NoteCreateRequest request = new NoteCreateRequest(
+                null,
+                "This note has no title and should fail validation.",
+                Set.of(Tag.PERSONAL)
+        );
+
+        mockMvc.perform(post("/api/v1/notes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.title").value("Title is required"));
+    }
 
 }
