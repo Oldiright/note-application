@@ -80,5 +80,4 @@ public class GlobalExceptionHandler {
 
     private record ErrorResponse(int status, String message, LocalDateTime timestamp) {
     }
-    //todo: looks good, but will think about it late
 }
