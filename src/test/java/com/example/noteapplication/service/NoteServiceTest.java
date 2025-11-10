@@ -4,6 +4,7 @@ import com.example.noteapplication.dto.NoteCreateRequest;
 import com.example.noteapplication.dto.NoteDetailResponse;
 import com.example.noteapplication.dto.NoteUpdateRequest;
 import com.example.noteapplication.exception.NoteNotFoundException;
+import com.example.noteapplication.mapper.NoteMapper;
 import com.example.noteapplication.model.Note;
 import com.example.noteapplication.model.Tag;
 import com.example.noteapplication.repository.NoteRepository;
@@ -35,13 +36,16 @@ public class NoteServiceTest {
 
     @Mock
     private NoteRepository noteRepository;
+    private final NoteMapper mapper = new NoteMapper();
     @InjectMocks
     private NoteServiceImpl noteService;
     private Note testNote;
     private NoteCreateRequest createRequest;
 
+
     @BeforeEach
     void setUp() {
+        noteService = new NoteServiceImpl(noteRepository, mapper);
         testNote = Note.builder()
                 .id("507f1f77bcf86cd799439011")
                 .title("Quarterly Business Review Meeting")

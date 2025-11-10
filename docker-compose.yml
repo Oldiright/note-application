@@ -12,6 +12,12 @@ services:
       - mongodb_data:/data/db
     networks:
       - notes-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
   notes-app:
     build:
@@ -22,6 +28,7 @@ services:
       - "8080:8080"
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/notesdb
+      SPRING_PROFILES_ACTIVE: docker
     depends_on:
       mongodb:
         condition: service_healthy
